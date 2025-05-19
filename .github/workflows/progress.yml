@@ -1,0 +1,37 @@
+name: Label Issue as In Progress when PR is opened
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+
+jobs:
+  label-linked-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Label linked issues as "In progress"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const linkedIssues = pr.body.match(/#\d+/g);
+
+            if (!linkedIssues) {
+              console.log("No issues linked in PR description.");
+              return;
+            }
+
+            for (const ref of linkedIssues) {
+              const issue_number = parseInt(ref.replace('#', ''));
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                labels: ['in progress']
+              });
+
+              console.log(` Etiqueta 'in progress' aplicada a issue #${issue_number}`);
+            }
